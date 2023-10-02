@@ -1,0 +1,10 @@
+#ifndef Kernel_function_hpp
+#define Kernel_function_hpp
+
+double W(double x, double x0, double h);
+
+double dW(double x, double x0, double h);
+
+double d2W(double x, double x0, double h);
+
+#endif
