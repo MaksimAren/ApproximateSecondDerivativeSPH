@@ -1,0 +1,81 @@
+#include "Kernel_function.hpp"
+#include <cmath>
+
+double W(double x, double x0, double h) {
+    double q = abs(x - x0) / h;
+    double y = 0;
+    if (q <= 1) {
+        // C2 O2
+//        y = 5 / (2 * h);
+//        y *= pow(1 - q, 3);
+//        y *= 3 * q + 1;
+        
+        // C2 O4
+//        y = 5 / (4 * h);
+//        y *= (42 - 168 * pow(q, 2)) / 13;
+//        y *= pow(1 - q, 3);
+//        y *= 3 * q + 1;
+        
+        // C4 O2
+        y = 3 / (2 * h);
+        y *= pow(1 - q, 5);
+        y *= 8 * pow(q, 2) + 5 * q + 1;
+        
+        // C4 O4
+//        y = 3 / (4 * h);
+//        y *= (60 - 330 * pow(q, 2)) / 19;
+//        y *= pow(1 - q, 5);
+//        y *= 8 * pow(q, 2) + 5 * q + 1;
+    }
+    return y;
+}
+
+double dW(double x, double x0, double h) {
+    double q = abs(x - x0) / h;
+    double y = 0;
+    if (q <= 1) {
+        // C2 O2
+//        y = 5 * (x - x0) * (-12) * q / (abs(x - x0) * 2 * pow(h, 2));
+//        y *= pow(1 - q, 2);
+        
+        // C2 O4 (?)
+        
+        
+        // C4 O2
+        y = (x - x0) / abs(x - x0);
+        y *= 3 / (2 * pow(h, 2));
+        y *= pow(1 - q, 4);
+        y *= -56 * pow(q, 2) - 14 * q;
+        
+        // C4 O4
+//        y = 3 * (x - x0) * 30 * q / (abs(x - x0) * 2 * pow(h, 2) * 19);
+//        y *= pow(1 - q, 4);
+//        y *= 396 * pow(q, 3) + 44 * pow(q, 2) - 100 * q - 25;
+    }
+    return y;
+}
+
+double d2W(double x, double x0, double h) {
+    double q = abs(x - x0) / h;
+    double y = 0;
+    if (q <= 1) {
+        // C2 O2
+//        y = 5 * 12 / (2 * pow(h, 3));
+//        y *= (1 - q);
+//        y *= 3 * q - 1;
+        
+        // C2 O4 (?)
+
+        // C4 O2
+        y = 3 / (2 * pow(h, 3));
+        y *= pow(1 - q, 3);
+        y *= 336 * pow(q, 2) - 42 * q - 14;
+        
+        // C4 O4
+//        y = - 3 * 30 / (2 * pow(h, 3) * 19);
+//        y *= pow(1 - q, 3);
+//        y *= 3186 * pow(q, 4) - 1276 * pow(q, 3) - 732 * pow(q, 2) + 75 * q + 25;
+    }
+    
+    return y;
+}
