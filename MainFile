@@ -1,0 +1,225 @@
+#include <iostream>
+#include <fstream>
+#include <cmath>
+#include <vector>
+#include <string>
+//#include "Kernel_function.hpp"
+#include "Kernel_function_Wendland.hpp"
+
+//using namespace std;
+
+const double PI = acos(-1.0);
+
+std::string folder = "/Users/maksim/Desktop/Xcode/Institute_programs/ApproximateSecondDerivativeSPH";
+std::string file_results = folder + "/results.txt";
+
+//double analytical_v(double x);
+//double analytical_second_derivative_of_v(double x);
+double solution_Burgers(double x, double t, double u0, double k, double a);
+
+int main() {
+    setlocale(LC_ALL, "rus");
+    
+    std::cout << std::boolalpha; //чтобы cout выводил true и false, вместо 1 и 0
+    std::cout << std::setprecision(16);
+    
+    double left_border = -1;
+    double right_border = 2;
+    
+    const int N_gas_particles_per_unit_side = 1000;
+    double h = 0.1;
+    
+    double tau = pow(10, -8);
+    double moment_in_time = 1000 * tau;
+    
+    double init_rho = 1;
+    double u0 = 0.1;
+    double k = 2 * PI;
+    double a = 0.5;
+    
+    
+    const int indent = 4;
+    std::string str_indent(indent, ' ');
+    
+    double N = N_gas_particles_per_unit_side * (right_border - left_border);
+    double m = init_rho * (right_border - left_border) / N;
+    std::vector<double> rho(N);
+    for (int i = 0; i < N; i++) {
+        rho[i] = init_rho;
+    }
+    
+    std::vector<double> xi_SPH(N), prev_xi_SPH(N);
+    //расставляем частицы равномерно
+    double step = (right_border - left_border) / (N + 1);
+    for (int i = 0; i < N; i++) {
+        xi_SPH[i] = left_border + (i + 1.0) * step;
+    }
+    
+    double eta_squared = 0.001 * pow(h, 2);
+    
+    std::vector<double> prev_v(N), curr_v(N), d2_v(N);
+    for (int i = 0; i < N; i++) {
+        curr_v[i] = solution_Burgers(xi_SPH[i], 0, u0, k, a);
+    }
+    
+//    for (int i = 0; i < N; i++) {
+//        d2_v[i] = 0.0;
+//        for (int j = 0; j < N; j++) {
+//            d2_v[i] += ((v[i] - v[j]) * (xi_SPH[i] - xi_SPH[j]) * dW(xi_SPH[i], xi_SPH[j], h)) / (pow(xi_SPH[i] - xi_SPH[j], 2) + eta_squared);
+//        }
+//        d2_v[i] *= 2 * m / rho;
+//    }
+    
+    int N_time = ceil(moment_in_time / tau);
+    for (int n = 1; n <= N_time; n++) {
+        prev_xi_SPH = xi_SPH;
+        prev_v = curr_v;
+        
+        for (int i = 0; i < N; i++) {
+            rho[i] = 0;
+            for (int j = 0; j < N; j++) {
+                rho[i] += W(prev_xi_SPH[i], prev_xi_SPH[j], h);
+            }
+            rho[i] *= m;
+        }
+        
+        //первая схема
+        //находим первые производные
+//        std::vector<double> v_first_der(N);
+//        for (int i = 0; i < N; i++) {
+//            v_first_der[i] = 0;
+//            for (int j = 0; j < N; j++) {
+//                //П.1
+//                v_first_der[i] += prev_v[j] * dW(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//                //П.2
+////                v_first_der[i] += (prev_v[j] - prev_v[i]) * dW(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//                //П.3
+////                v_first_der[i] += (prev_v[j] + prev_v[i]) * dW(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//            }
+//            v_first_der[i] *= m;
+//        }
+//        //находим вторые производные
+//        for (int i = 0; i < N; i++) {
+//            curr_v[i] = 0;
+//            for (int j = 0; j < N; j++) {
+//                //В.1.1
+//                curr_v[i] += v_first_der[j] * dW(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//                //В.1.2
+////                curr_v[i] += (v_first_der[j] - v_first_der[i]) * dW(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//                //В.1.3
+////                curr_v[i] += (v_first_der[j] + v_first_der[i]) * dW(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//            }
+//            curr_v[i] *= tau * pow(a, 2) * m;
+//            curr_v[i] += prev_v[i];
+//        }
+        
+        //вторая схема
+//        for (int i = 0; i < N; i++) {
+//            curr_v[i] = 0;
+//            for (int j = 0; j < N; j++) {
+//                //3 варианта
+//                //2.1
+////                curr_v[i] += prev_v[j] * d2W(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//                //2.2
+//                curr_v[i] += (prev_v[j] - prev_v[i]) * d2W(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//                //2.3
+////                curr_v[i] += (prev_v[j] + prev_v[i]) * d2W(prev_xi_SPH[i], prev_xi_SPH[j], h) / rho[j];
+//            }
+//            curr_v[i] *= tau * pow(a, 2) * m;
+//            curr_v[i] += prev_v[i];
+//        }
+        
+        //третья схема
+        for (int i = 0; i < N; i++) {
+            curr_v[i] = 0;
+            for (int j = 0; j < N; j++) {
+                if (j != i) {
+                    curr_v[i] += (prev_v[i] - prev_v[j]) * dW(prev_xi_SPH[i], prev_xi_SPH[j], h) / ((prev_xi_SPH[i] - prev_xi_SPH[j]) * rho[j]);
+                }
+            }
+            curr_v[i] *= 2 * tau * pow(a, 2) * m;
+            curr_v[i] += prev_v[i];
+        }
+        
+        //четвёртая схема
+//        for (int i = 0; i < N; i++) {
+//            curr_v[i] = 0;
+//            for (int j = 0; j < N; j++) {
+//                curr_v[i] += (prev_v[i] - prev_v[j]) * (prev_xi_SPH[i] - prev_xi_SPH[j]) * dW(prev_xi_SPH[i], prev_xi_SPH[j], h) / ((pow(prev_xi_SPH[i] - prev_xi_SPH[j], 2) + eta_squared) * rho[j]);
+//            }
+//            curr_v[i] *= 2 * tau * pow(a, 2) * m;
+//            curr_v[i] += prev_v[i];
+//        }
+
+        for (int i = 0; i < N; i++) {
+            xi_SPH[i] = prev_xi_SPH[i] + tau * curr_v[i];
+        }
+        
+        std::cout << "n = " << n << " (" << N_time << ") complete, time = " << tau * n << " (" << moment_in_time << ")" << std::endl;
+    }
+    
+    //считаем максимальные погрешности скорости и плотности
+    double max_error_v = 0, error = 0;
+    for (int i = 0; i < N; i++) {
+        if (0 <= xi_SPH[i] && xi_SPH[i] <= 1) {
+            error = abs(curr_v[i] - solution_Burgers(xi_SPH[i], moment_in_time, u0, k, a));
+            if (error > max_error_v) {
+                max_error_v = error;
+            }
+        }
+    }
+    
+    // вывод результатов расчёта
+    double K = pow(h, -1);
+    double phi = pow(N_gas_particles_per_unit_side * h, -1);
+    std::cout << std::endl;
+    std::cout << "h = " << h << ", N = " << N_gas_particles_per_unit_side << std::endl;
+    std::cout << "K = " << K << ", log(K) = " << log10(K) << std::endl;
+    std::cout << "phi = " << phi << ", log(phi) = " << log10(phi) << std::endl;
+    std::cout << "Конечная максимальная погрешность скорости (I) = " << max_error_v << ", log(I) = " << log10(max_error_v) << std::endl;
+    std::cout << std::endl;
+    
+    std::ofstream out_res;
+    out_res.open(file_results);
+    if (out_res.is_open()) {
+        out_res << std::setprecision(16);
+        int counter = 1;
+        out_res << "# " << counter << ") xi_SPH_g,";
+        counter++;
+        out_res << str_indent << counter << ") an_v,";
+        counter++;
+        out_res << str_indent << counter << ") num_v";
+        out_res << std::endl << "# " << std::endl;
+        double an_v = 0;
+        for (int i = 0; i < N; i++) {
+            an_v = solution_Burgers(xi_SPH[i], moment_in_time, u0, k, a);
+            out_res << xi_SPH[i];
+            out_res << " " << an_v;
+            out_res << " " << curr_v[i];
+            out_res << std::endl;
+        }
+    }
+    out_res.close();
+    
+    std::cout << "Finish!\n";
+    return 0;
+}
+
+//double analytical_v(double x) {
+//    double y;
+//    y = sin(2 * PI * x);
+//    return y;
+//}
+//
+//double analytical_second_derivative_of_v(double x) {
+//    double y;
+//    y = -sin(2 * PI * x);
+//    y *= 4 * pow(PI, 2);
+//    return y;
+//}
+
+double solution_Burgers(double x, double t, double u0, double k, double a) {
+    double y;
+    y = u0 * cos(k * x) * exp(-pow(a * k, 2) * t);
+    return y;
+}
